@@ -25,10 +25,19 @@
 #define IN_W 160
 #define IN_H 120
 
-// ===== SCALE FACTOR =====
-// Upsample 1.5 → 3/2
-#define SCALE_NUM 3
-#define SCALE_DEN 2
+// ===== SCALE FACTOR CONFIGURATION =====
+// Set to 1 for UPSAMPLING (1.5x = 3/2) or 0 for DOWNSAMPLING (2/3 = 2/3)
+#define UPSAMPLE_MODE 1
+
+#if UPSAMPLE_MODE
+  // Upsampling: 1.5x → scale_num=3, scale_den=2
+  #define SCALE_NUM 3
+  #define SCALE_DEN 2
+#else
+  // Downsampling: 2/3 → scale_num=2, scale_den=3
+  #define SCALE_NUM 2
+  #define SCALE_DEN 3
+#endif
 
 #define OUT_W ((IN_W * SCALE_NUM) / SCALE_DEN)
 #define OUT_H ((IN_H * SCALE_NUM) / SCALE_DEN)
@@ -40,6 +49,14 @@ static size_t jpeg_len = 0;
 void setup() {
   Serial.begin(921600);
   delay(2000);
+
+  #if UPSAMPLE_MODE
+    Serial.println("ESP32 CAM: UPSAMPLING mode (1.5x = 3/2)");
+    Serial.printf("Input: %dx%d -> Output: %dx%d\n", IN_W, IN_H, OUT_W, OUT_H);
+  #else
+    Serial.println("ESP32 CAM: DOWNSAMPLING mode (2/3)");
+    Serial.printf("Input: %dx%d -> Output: %dx%d\n", IN_W, IN_H, OUT_W, OUT_H);
+  #endif
 
   pinMode(FLASH_GPIO, OUTPUT);
   digitalWrite(FLASH_GPIO, LOW);
@@ -75,16 +92,21 @@ void setup() {
 }
 
 // Nearest neighbor resize (RGB565 color)
+// Works for both upsampling and downsampling using integer arithmetic
+// Uses inverse mapping: for each output pixel, find nearest input pixel
 void resize_nearest(uint8_t *in) {
   uint16_t *in_rgb565 = (uint16_t *)in;
   for (int y = 0; y < OUT_H; y++) {
     for (int x = 0; x < OUT_W; x++) {
+      // Inverse mapping: calculate source pixel position
       int src_y = (y * SCALE_DEN) / SCALE_NUM;
       int src_x = (x * SCALE_DEN) / SCALE_NUM;
 
+      // Clamp to bounds
       if (src_y >= IN_H) src_y = IN_H - 1;
       if (src_x >= IN_W) src_x = IN_W - 1;
 
+      // Copy pixel from source to destination
       resized[y * OUT_W + x] =
         in_rgb565[src_y * IN_W + src_x];
     }

@@ -4,6 +4,9 @@ import struct
 PORT = "COM4"
 BAUD = 921600
 
+# Simple receiver for ESP32 CAM resized images (upsampled or downsampled)
+# Just receives JPEG images and saves them
+
 ser = serial.Serial(
     PORT,
     BAUD,
@@ -16,23 +19,23 @@ ser.setDTR(False)
 ser.setRTS(False)
 
 img_count = 0
-print("Waiting for frames...")
+print("Waiting for frames from ESP32 CAM...")
 
 while True:
-    # Find sync word
+    # Find sync word (0xAA 0x55)
     if ser.read(1) != b'\xAA':
         continue
     if ser.read(1) != b'\x55':
         continue
 
-    # Read image size
+    # Read image size (4 bytes, little-endian)
     size_bytes = ser.read(4)
     if len(size_bytes) != 4:
         continue
 
     size = struct.unpack("<I", size_bytes)[0]
 
-    # Read image
+    # Read image data
     data = ser.read(size)
     if len(data) != size:
         print("Incomplete frame")
@@ -43,4 +46,4 @@ while True:
     with open(filename, "wb") as f:
         f.write(data)
 
-    print(f"Saved {filename} ({size} bytes)")
+    print(f"Saved {filename} ({size} bytes) - Frame #{img_count}")

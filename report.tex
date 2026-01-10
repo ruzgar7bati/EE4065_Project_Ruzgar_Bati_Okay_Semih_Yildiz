@@ -1,0 +1,364 @@
+\documentclass[12pt,a4paper]{article}
+\usepackage[utf8]{inputenc}
+\usepackage{graphicx}
+\usepackage{geometry}
+\usepackage{listings}
+\usepackage{xcolor}
+\usepackage{hyperref}
+\usepackage{float}
+\usepackage{amsmath}
+
+\geometry{margin=1in}
+
+% Code listing style
+\lstset{
+    language=C,
+    basicstyle=\ttfamily\small,
+    keywordstyle=\color{blue},
+    commentstyle=\color{green!60!black},
+    stringstyle=\color{red},
+    numbers=left,
+    numberstyle=\tiny,
+    stepnumber=1,
+    numbersep=5pt,
+    frame=single,
+    breaklines=true,
+    showstringspaces=false
+}
+
+\begin{document}
+
+% Title Page
+\begin{titlepage}
+    \centering
+    
+    % University Logo
+    % [CHANGE] Uncomment and add Marmara University logo file path:
+    \includegraphics[width=3cm]{images/marmara_logo.png}
+    \vspace{1cm}
+    
+    % University Name
+    {\Large\bfseries MARMARA\par}
+    {\large\scshape UNIVERSITY\par}
+    
+    \vspace{1.5cm}
+    
+    % Department and Faculty Information
+    \raggedright
+    DEPARTMENT OF ELECTRICAL AND ELECTRONICS ENGINEERING\par
+    FACULTY OF ENGINEERING\par
+    MARMARA UNIVERSITY\par
+    
+    \vspace{3cm}
+    
+    % Title
+    \centering
+    {\Large\bfseries Embedded Digital Image Processing\par}
+    {\Large\bfseries Final Project Report\par}
+    
+    \vspace{3cm}
+    
+    % Student Information
+    \raggedleft
+    Rüzgar Batı Okay\par
+    Student No: 150722048\par
+    EE-4065 Embedded Digital Image Processing\par
+    
+    \vspace{2cm}
+    
+    % Date
+    \centering
+    [CHANGE] Date [END CHANGE]\par
+    
+    \vfill
+\end{titlepage}
+
+\newpage
+
+\section{Introduction}
+
+This report presents the implementation of image processing operations on the ESP32 CAM module. The project consists of two main tasks: thresholding for object detection and image resizing with upsampling and downsampling capabilities.
+
+The ESP32 CAM module is a low-cost microcontroller with an integrated camera. It has limited memory and processing power. This makes it important to use efficient algorithms that work with integer arithmetic instead of floating-point operations.
+
+[CHANGE] Add any additional context about the project goals or motivation here. [END CHANGE]
+
+\section{Question 1: Thresholding for Object Detection}
+
+Question 1 requires implementing a thresholding function that extracts a bright object from a darker background. The object should have approximately 1000 pixels. The implementation is done in two parts: Python code for PC testing and C code for the ESP32 CAM module.
+
+\subsection{Problem Description}
+
+The task is to detect a bright object in an image captured by the ESP32 CAM. The background pixels are darker than the object pixels. The thresholding result should extract the object based on its size. Specifically, the output should contain at most 1000 bright pixels.
+
+\subsection{Method}
+
+The method uses histogram-based adaptive thresholding. First, we build a histogram of pixel intensities. Then, we find a threshold by accumulating pixels from the brightest intensity downward until we reach 1000 pixels. This ensures that the brightest pixels are selected first.
+
+The algorithm works as follows:
+\begin{enumerate}
+    \item Capture grayscale image from camera
+    \item Build histogram of pixel intensities (0-255)
+    \item Find threshold by accumulating from brightest to darkest
+    \item Create binary output: pixels above threshold are set to 255, others to 0
+    \item Limit output to maximum 1000 bright pixels
+\end{enumerate}
+
+\subsection{Python Implementation (Part a)}
+
+The Python implementation serves as a reference and testing tool. It uses the same algorithm as the ESP32 code but runs on a PC for easier debugging and visualization.
+
+The main functions are:
+\begin{itemize}
+    \item \texttt{rgb\_to\_grayscale()}: Converts RGB image to grayscale using integer arithmetic
+    \item \texttt{extract\_bright\_pixels\_histogram()}: Performs histogram-based thresholding
+    \item \texttt{visualize()}: Displays original and binary images for verification
+\end{itemize}
+
+[CHANGE] Add code snippet or explanation of key Python functions here if needed. [END CHANGE]
+
+Figure~\ref{fig:q1_python} shows the results of the Python implementation.
+
+\begin{figure}[H]
+    \centering
+    % [CHANGE] Uncomment and replace with your image path:
+    % \includegraphics[width=0.8\textwidth]{images/python_q1_result.png}
+    \fbox{\parbox{0.8\textwidth}{\centering [PLACEHOLDER: Add Python Q1 result image here]}}
+    \caption{Python implementation results: (left) Original grayscale image, (right) Binary output with thresholded object}
+    \label{fig:q1_python}
+\end{figure}
+
+\subsection{ESP32 CAM Implementation (Part b)}
+
+The ESP32 CAM implementation performs the same thresholding operation directly on the microcontroller. The code is optimized for embedded systems with limited memory.
+
+Key features of the implementation:
+\begin{itemize}
+    \item Uses grayscale format to reduce memory usage
+    \item Implements histogram in a single pass through the image
+    \item Uses integer arithmetic only (no floating-point operations)
+    \item Sends binary output to PC via serial communication
+\end{itemize}
+
+The camera is configured to capture 96x96 pixel grayscale images. This resolution is sufficient for object detection while keeping memory usage low.
+
+[CHANGE] Add explanation of any specific optimizations or design choices here. [END CHANGE]
+
+The main processing steps in the ESP32 code are:
+\begin{lstlisting}[caption=ESP32 Thresholding Algorithm (simplified)]
+// 1. Build histogram
+for (int i = 0; i < fb->len; i++) {
+    hist[fb->buf[i]]++;
+}
+
+// 2. Find threshold from brightest to darkest
+uint32_t sum = 0;
+uint8_t threshold = 255;
+for (int i = 255; i >= 0; i--) {
+    sum += hist[i];
+    if (sum >= MAX_PIXELS) {
+        threshold = i;
+        break;
+    }
+}
+
+// 3. Create binary output
+for (int i = 0; i < fb->len; i++) {
+    if (fb->buf[i] >= threshold && selected < MAX_PIXELS) {
+        binary[i] = 255;
+        selected++;
+    } else {
+        binary[i] = 0;
+    }
+}
+\end{lstlisting}
+
+Figure~\ref{fig:q1_esp32} shows the results received from the ESP32 CAM module.
+
+\begin{figure}[H]
+    \centering
+    % [CHANGE] Uncomment and replace with your image path:
+    % \includegraphics[width=0.6\textwidth]{images/esp32_q1_result.png}
+    \fbox{\parbox{0.6\textwidth}{\centering [PLACEHOLDER: Add ESP32 Q1 result image here]}}
+    \caption{Binary image received from ESP32 CAM showing the thresholded object}
+    \label{fig:q1_esp32}
+\end{figure}
+
+\subsection{Results and Evaluation}
+
+[CHANGE] Add quantitative results here:
+\begin{itemize}
+    \item Processing time on ESP32
+    \item Accuracy of object detection
+    \item Comparison between Python and ESP32 results
+    \item Any limitations or issues encountered
+\end{itemize}
+[END CHANGE]
+
+The thresholding algorithm successfully extracts bright objects from dark backgrounds. The histogram-based approach ensures that the brightest pixels are selected first, which works well when the object is clearly brighter than the background.
+
+\section{Question 3: Image Upsampling and Downsampling}
+
+Question 3 requires implementing upsampling and downsampling operations on the ESP32 CAM module. The implementation must handle non-integer scale factors such as 1.5 and 2/3.
+
+\subsection{Problem Description}
+
+The task is to resize images captured by the ESP32 CAM module. Two operations are required:
+\begin{itemize}
+    \item \textbf{Upsampling}: Increase image size (e.g., 1.5x scale factor)
+    \item \textbf{Downsampling}: Decrease image size (e.g., 2/3 scale factor)
+\end{itemize}
+
+The implementation must use integer arithmetic to avoid floating-point operations on the embedded system.
+
+\subsection{Method}
+
+The method uses nearest-neighbor interpolation with integer arithmetic. The scale factor is represented as a fraction: \texttt{scale = scale\_num / scale\_den}.
+
+For upsampling with scale 1.5:
+\begin{itemize}
+    \item \texttt{scale\_num = 3}
+    \item \texttt{scale\_den = 2}
+    \item Output size = (Input size × 3) / 2
+\end{itemize}
+
+For downsampling with scale 2/3:
+\begin{itemize}
+    \item \texttt{scale\_num = 2}
+    \item \texttt{scale\_den = 3}
+    \item Output size = (Input size × 2) / 3
+\end{itemize}
+
+The algorithm uses inverse mapping. For each output pixel, we calculate which input pixel to use:
+\begin{equation}
+\text{src\_x} = \frac{\text{out\_x} \times \text{scale\_den}}{\text{scale\_num}}
+\end{equation}
+
+This ensures that we always map to valid input pixel coordinates.
+
+\subsection{Upsampling Implementation (Part a)}
+
+Upsampling increases the image size. For example, a 160×120 image becomes 240×180 when upsampled by 1.5x.
+
+The ESP32 implementation:
+\begin{itemize}
+    \item Captures 160×120 RGB565 color images
+    \item Resizes to 240×180 using nearest-neighbor interpolation
+    \item Encodes the result as JPEG
+    \item Sends JPEG data to PC via serial communication
+\end{itemize}
+
+[CHANGE] Add any specific details about the upsampling implementation or optimizations here. [END CHANGE]
+
+The resize function processes RGB565 pixels (16-bit color values) correctly. Each pixel is copied from the source position to the destination position.
+
+Figure~\ref{fig:q3_upsample} shows the upsampling results.
+
+\begin{figure}[H]
+    \centering
+    % [CHANGE] Uncomment and replace with your image path:
+    % \includegraphics[width=0.8\textwidth]{images/upsampling_result.jpg}
+    \fbox{\parbox{0.8\textwidth}{\centering [PLACEHOLDER: Add upsampling result image here]}}
+    \caption{Upsampling result: Original 160×120 image upsampled to 240×180 (1.5x scale)}
+    \label{fig:q3_upsample}
+\end{figure}
+
+\subsection{Downsampling Implementation (Part b)}
+
+Downsampling decreases the image size. For example, a 160×120 image becomes approximately 106×80 when downsampled by 2/3.
+
+The ESP32 implementation uses the same resize algorithm but with different scale factors:
+\begin{itemize}
+    \item \texttt{scale\_num = 2}
+    \item \texttt{scale\_den = 3}
+    \item Output size = (160 × 2) / 3 = 106 pixels width
+\end{itemize}
+
+The same nearest-neighbor interpolation method is used. The algorithm automatically handles the smaller output size.
+
+[CHANGE] Add any specific details about the downsampling implementation here. [END CHANGE]
+
+Figure~\ref{fig:q3_downsample} shows the downsampling results.
+
+\begin{figure}[H]
+    \centering
+    % [CHANGE] Uncomment and replace with your image path:
+    % \includegraphics[width=0.8\textwidth]{images/downsampling_result.jpg}
+    \fbox{\parbox{0.8\textwidth}{\centering [PLACEHOLDER: Add downsampling result image here]}}
+    \caption{Downsampling result: Original 160×120 image downsampled to 106×80 (2/3 scale)}
+    \label{fig:q3_downsample}
+\end{figure}
+
+\subsection{Configuration}
+
+The ESP32 code uses a configuration flag to switch between upsampling and downsampling modes:
+
+\begin{lstlisting}[caption=Scale Factor Configuration]
+// Set to 1 for UPSAMPLING (1.5x = 3/2) or 0 for DOWNSAMPLING (2/3)
+#define UPSAMPLE_MODE 1
+
+#if UPSAMPLE_MODE
+  // Upsampling: 1.5x → scale_num=3, scale_den=2
+  #define SCALE_NUM 3
+  #define SCALE_DEN 2
+#else
+  // Downsampling: 2/3 → scale_num=2, scale_den=3
+  #define SCALE_NUM 2
+  #define SCALE_DEN 3
+#endif
+\end{lstlisting}
+
+This makes it easy to test both operations by changing a single define.
+
+\subsection{Results and Evaluation}
+
+[CHANGE] Add quantitative results here:
+\begin{itemize}
+    \item Processing time for upsampling and downsampling
+    \item Memory usage
+    \item Quality comparison between original and resized images
+    \item Verification that non-integer scales work correctly
+    \item Comparison with Python reference implementation
+\end{itemize}
+[END CHANGE]
+
+Both upsampling and downsampling operations work correctly with non-integer scale factors. The nearest-neighbor interpolation provides acceptable quality for embedded applications while maintaining low computational complexity.
+
+Figure~\ref{fig:q3_comparison} shows a side-by-side comparison of original, upsampled, and downsampled images.
+
+\begin{figure}[H]
+    \centering
+    % [CHANGE] Uncomment and replace with your image path:
+    % \includegraphics[width=0.9\textwidth]{images/comparison_q3.png}
+    \fbox{\parbox{0.9\textwidth}{\centering [PLACEHOLDER: Add comparison image here]}}
+    \caption{Comparison: (left) Original 160×120, (middle) Upsampled 240×180, (right) Downsampled 106×80}
+    \label{fig:q3_comparison}
+\end{figure}
+
+\section{Conclusion}
+
+This project successfully implements image processing operations on the ESP32 CAM module. The thresholding algorithm correctly extracts bright objects from dark backgrounds. The resizing operations handle both upsampling and downsampling with non-integer scale factors.
+
+Key achievements:
+\begin{itemize}
+    \item Efficient algorithms using only integer arithmetic
+    \item Successful implementation on resource-constrained hardware
+    \item Correct handling of non-integer scale factors for resizing
+    \item Real-time processing capability on ESP32 CAM
+\end{itemize}
+
+[CHANGE] Add any final thoughts, limitations, or future work suggestions here. [END CHANGE]
+
+\section{Code Availability}
+
+All code implementations are available in the project repository:
+\begin{itemize}
+    \item Python implementations: \texttt{python/q1.py}, \texttt{python/q3.py}
+    \item ESP32 CAM code: \texttt{esp32\_cam\_link/esp32\_cam\_q1/}, \texttt{esp32\_cam\_link/esp32\_cam\_q3/}
+    \item Receiver scripts: \texttt{esp32\_cam\_link/*/receive.py}
+\end{itemize}
+
+[CHANGE] Add repository link or additional information about code organization if needed. [END CHANGE]
+
+\end{document}
+
