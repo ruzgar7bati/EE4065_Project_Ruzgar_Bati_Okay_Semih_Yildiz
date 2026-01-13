@@ -1,0 +1,17 @@
+# YOLO Dataset Configuration for Handwritten Digit Detection
+# Simplified to 3 classes: 0, 4, 7 (for testing and reduced model size)
+
+path: .  # Dataset root directory (relative to this file)
+train: images/train  # Training images directory
+val: images/val      # Validation images directory
+test: images/test    # Test images directory
+
+# Number of classes
+nc: 3
+
+# Class names (digits 0, 4, 7)
+names:
+  0: '0'
+  1: '4'
+  2: '7'
+
