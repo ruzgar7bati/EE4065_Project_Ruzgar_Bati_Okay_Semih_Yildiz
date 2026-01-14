@@ -1,0 +1,7 @@
+\section*{Abstract}
+
+This report presents the implementation of image processing and basic computer vision methods on the ESP32-CAM, a low-cost microcontroller with an integrated camera and limited computational resources. Due to these constraints, all algorithms are designed to be efficient and suitable for embedded systems.
+
+The project includes three main components. First, a histogram-based thresholding method is implemented to detect bright objects on dark backgrounds. Second, a handwritten digit detection system is developed using a YOLO-based model trained to recognize the digits 0, 4, and 7. Third, image resizing operations are implemented to support both upsampling and downsampling with non-integer scale factors such as 1.5× and 2/3.
+
+All implementations rely on integer arithmetic instead of floating-point operations to ensure compatibility with the ESP32-CAM hardware. The development follows a two-stage workflow: algorithms are first designed and tested in Python on a PC, then ported and optimized in C/C++ for execution on the ESP32-CAM. Experimental results show that efficient integer-based methods can achieve practical image processing performance on resource-constrained hardware. The thresholding algorithm successfully extracts target objects, the YOLO model detects handwritten digits with reasonable accuracy, and the resizing operations produce acceptable visual results for embedded applications.

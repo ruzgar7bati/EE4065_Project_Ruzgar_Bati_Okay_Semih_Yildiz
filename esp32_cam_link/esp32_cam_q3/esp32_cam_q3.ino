@@ -26,10 +26,14 @@
 #define IN_H 120
 
 // ===== SCALE FACTOR CONFIGURATION =====
-// Set to 1 for UPSAMPLING (1.5x = 3/2) or 0 for DOWNSAMPLING (2/3 = 2/3)
-#define UPSAMPLE_MODE 1
+// Set to 0 for ORIGINAL (1/1), 1 for UPSAMPLING (1.5x = 3/2), or 2 for DOWNSAMPLING (2/3)
+#define IMAGE_MODE 2  // 0=Original, 1=Upsample, 2=Downsample
 
-#if UPSAMPLE_MODE
+#if IMAGE_MODE == 0
+  // Original: 1/1 → scale_num=1, scale_den=1
+  #define SCALE_NUM 1
+  #define SCALE_DEN 1
+#elif IMAGE_MODE == 1
   // Upsampling: 1.5x → scale_num=3, scale_den=2
   #define SCALE_NUM 3
   #define SCALE_DEN 2
@@ -50,7 +54,10 @@ void setup() {
   Serial.begin(921600);
   delay(2000);
 
-  #if UPSAMPLE_MODE
+  #if IMAGE_MODE == 0
+    Serial.println("ESP32 CAM: ORIGINAL mode (1/1 - no resizing)");
+    Serial.printf("Output: %dx%d\n", OUT_W, OUT_H);
+  #elif IMAGE_MODE == 1
     Serial.println("ESP32 CAM: UPSAMPLING mode (1.5x = 3/2)");
     Serial.printf("Input: %dx%d -> Output: %dx%d\n", IN_W, IN_H, OUT_W, OUT_H);
   #else
@@ -121,9 +128,21 @@ void loop() {
   digitalWrite(FLASH_GPIO, LOW);
   if (!fb) return;
 
-  resize_nearest(fb->buf);
+  #if IMAGE_MODE == 0
+    // Original mode: copy directly without resizing
+    uint16_t *in_rgb565 = (uint16_t *)fb->buf;
+    for (int i = 0; i < OUT_W * OUT_H; i++) {
+      resized[i] = in_rgb565[i];
+    }
+  #else
+    // Upsampling or downsampling: use resize function
+    resize_nearest(fb->buf);
+  #endif
 
   // Encode resized image as JPEG
+  // Debug: print actual dimensions being encoded
+  Serial.printf("Encoding image: %dx%d pixels\n", OUT_W, OUT_H);
+  
   bool ok = fmt2jpg(
       (uint8_t *)resized,
       OUT_W * OUT_H * 2,
@@ -136,11 +155,14 @@ void loop() {
   );
 
   if (ok) {
+    Serial.printf("JPEG encoded: %d bytes\n", jpeg_len);
     uint8_t sync[2] = {0xAA, 0x55};
     Serial.write(sync, 2);
     Serial.write((uint8_t *)&jpeg_len, 4);
     Serial.write(jpeg_buf, jpeg_len);
     free(jpeg_buf);
+  } else {
+    Serial.println("JPEG encoding failed!");
   }
 
   esp_camera_fb_return(fb);

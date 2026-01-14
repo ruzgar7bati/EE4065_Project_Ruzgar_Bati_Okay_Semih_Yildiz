@@ -29,12 +29,69 @@ Install required packages:
 pip install ultralytics opencv-python matplotlib
 ```
 
+**For better augmentations (recommended):**
+```bash
+pip install albumentations
+```
+
+The `prepare_dataset.py` script works with or without `albumentations`, but it's recommended for:
+- Better rotation handling (whole image rotation with multiple angles)
+- Automatic bounding box updates during augmentation
+- More robust augmentation pipeline
+
 ## Dataset Preparation
 
+### Step 1: Prepare Raw Images
+
 1. **Create images**: Write digits **0, 4, and 7** on paper and take photos
-2. **Organize images**: Place images in `images/train/`, `images/val/`, and `images/test/`
-3. **Annotate images**: Use LabelImg or similar tool to create bounding box annotations
-4. **Create labels**: Save annotations in YOLO format (one `.txt` file per image) in `labels/` folders
+2. **Place in source folder**: Put all raw images in `images/to processed/`
+3. **Naming convention**: Name files as `{digit} {number}.png` (e.g., `0 1.png`, `4 2.png`, `7 6.png`)
+   - Images ending with `6.png` will be used as test set (no augmentation)
+   - Images 1-5 will be split into train/val with augmentations
+
+### Step 2: Run Dataset Preparation Script
+
+```bash
+python prepare_dataset.py
+```
+
+This script will:
+- ✅ Separate test images (6.png files) - **augmented, but only in test folder**
+- ✅ Split remaining images (1-5) into train (80%) and val (20%)
+- ✅ Apply augmentations to all images (train/val/test):
+  - Noise
+  - Brightness adjustment
+  - Contrast adjustment
+  - Rotation (±10°)
+  - Gaussian blur
+  - Horizontal flip
+- ✅ Create empty label files (`.txt`) for annotation
+- ✅ Organize into proper folder structure
+
+**Output structure:**
+```
+images/
+  train/     (original + augmented images)
+  val/       (original + augmented images)
+  test/      (original + augmented images, never used in train/val)
+labels/
+  train/     (empty .txt files, ready for annotation)
+  val/       (empty .txt files, ready for annotation)
+  test/      (empty .txt files, ready for annotation)
+```
+
+**Note:** Test images (6.png files) are augmented but kept separate - they are never used in training or validation.
+
+### Step 3: Annotate Images
+
+1. **Use LabelImg**: Download from https://github.com/tzutalin/labelImg
+2. **Set format to YOLO**: View → Auto Save mode, format = YOLO
+3. **Annotate each image**:
+   - Draw bounding box around each digit
+   - Select class: 0="0", 1="4", 2="7"
+   - Save (creates/updates `.txt` file)
+
+See `ANNOTATION_GUIDE.md` for detailed instructions.
 
 ### YOLO Label Format
 

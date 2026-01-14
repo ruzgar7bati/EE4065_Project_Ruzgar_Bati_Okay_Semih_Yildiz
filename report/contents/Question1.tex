@@ -1,0 +1,97 @@
+\section{Question 1: Thresholding for Object Detection}
+
+This task focuses on detecting bright objects in images captured under low-light conditions. The objective is to extract bright regions from a dark background while limiting the output to a maximum of 1000 bright pixels. The algorithm is first implemented and tested in Python on a PC, then ported to the ESP32-CAM using C for embedded execution.
+
+\subsection{Problem Description}
+
+The input consists of images where the background is predominantly dark and the object of interest appears significantly brighter. The goal is to generate a binary output image in which bright pixels corresponding to the object are retained, while all other pixels are set to zero. To satisfy memory and processing constraints, the number of bright pixels in the output is limited to at most 1000.
+
+\subsection{Method}
+
+A histogram-based thresholding approach is used to identify the brightest pixels in the image. First, the grayscale intensity distribution of the image is computed by counting the number of pixels at each brightness level (0–255). Starting from the highest intensity value, pixels are accumulated until the total number of selected pixels reaches 1000. The corresponding intensity level is then used as the threshold.
+
+The algorithm proceeds as follows:
+\begin{enumerate}
+    \item Convert the input image to grayscale.
+    \item Compute a histogram of pixel intensities.
+    \item Traverse the histogram from the brightest intensity downward until 1000 pixels are accumulated.
+    \item Select all pixels brighter than or equal to the computed threshold.
+    \item Generate a binary output image where selected pixels are set to 255 and all others to 0.
+\end{enumerate}
+
+This method ensures that the brightest regions are preserved while enforcing a strict limit on the number of output pixels.
+
+\subsection{Python Implementation on PC}
+
+The algorithm is first implemented in Python to verify correctness and behavior. The complete Python implementation is shown in Appendix~\ref{appendix:q1:python}. The code closely follows the structure intended for the embedded implementation, avoiding unnecessary abstractions and floating-point operations where possible.
+
+For testing, we used a real photograph of a \textbf{sugar cube} placed on a dark phone and wooden table, taken with a mobile phone camera. The printed identifying information (such as company name and address) on the sugar cube is censored in the image, which explains the visible white edit in the reference picture.
+
+The main components of the Python implementation (see Appendix~\ref{appendix:q1:python}) include:
+\begin{itemize}
+    \item \texttt{rgb\_to\_grayscale()}: Converts RGB images to grayscale using the weighted sum
+\[
+\texttt{gray = (30R + 59G + 11B) / 100}
+\]
+    \item \texttt{extract\_bright\_pixels\_histogram()}: Constructs the histogram and determines the adaptive threshold.
+    \item \texttt{visualize()}: Displays the original and thresholded images for evaluation.
+\end{itemize}
+
+The histogram is computed in a single pass over the image, followed by a second pass to determine the threshold. This design directly mirrors the logic used in the embedded implementation. The Python script loads images from \texttt{question1\_images/reference\_taken\_from\_phone.jpg} and saves visualization results.
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.45\textwidth]{images/q1_reference_taken_from_phone.jpg}
+    \caption{Reference image taken with a phone: sugar cube on a darker phone and wooden background. Identifying text on the sugar wrapper (company address, etc.) is censored with a white edit.}
+    \label{fig:q1_phone_reference}
+\end{figure}
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.9\textwidth]{images/q1_figure_grayscale_versus_binaryoutput.png}
+    \caption{Python test: grayscale image (left) and binary output (right) after histogram-based thresholding. Due to viewing angle and lighting conditions from the phone camera and environment, the exact shape is slightly different from the ESP32 result, but in both cases the sugar cube is successfully extracted as a bright object.}
+    \label{fig:q1_python_result}
+\end{figure}
+
+\subsection{ESP32-CAM Implementation and Python Connector Script}
+
+The validated algorithm is then ported to the ESP32-CAM using C. The complete ESP32 implementation is shown in Appendix~\ref{appendix:q1:esp32}. The embedded implementation follows the same logical structure as the Python version, with additional attention paid to memory usage and execution efficiency.
+
+Key characteristics of the ESP32 implementation include:
+\begin{itemize}
+    \item Use of grayscale images to reduce memory consumption.
+    \item Single-pass histogram construction to minimize processing time.
+    \item Exclusive use of integer arithmetic.
+    \item High-speed serial transmission (921600 baud) for transferring results to a PC.
+\end{itemize}
+
+Images are captured at a resolution of 96×96 pixels in grayscale format, which provides sufficient spatial detail while remaining well within memory limits.
+
+The embedded processing pipeline consists of the following steps:
+\begin{enumerate}
+    \item Construct a grayscale intensity histogram.
+    \item Determine the adaptive threshold by accumulating pixels from the brightest level downward.
+    \item Generate a binary image limited to 1000 bright pixels.
+    \item Transmit the resulting image to the PC with synchronization bytes (0xAA 0x55) and size information.
+\end{enumerate}
+
+A Python receiver script (see Appendix~\ref{appendix:q1:receiver}) running on the PC receives the serial data, reconstructs the image, and saves it as \texttt{binary.png} for visualization and evaluation.
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.25\textwidth]{images/q1_binary.png}
+    \caption{Binary image received from the ESP32-CAM thresholding pipeline. Even though the camera angle and lighting differ from the phone image, the algorithm again extracts the sugar cube as a compact bright region with at most 1000 pixels.}
+    \label{fig:q1_esp32_binary}
+\end{figure}
+
+\subsection{Results and Evaluation}
+
+The histogram-based thresholding algorithm successfully extracts bright objects from dark backgrounds when sufficient contrast is present. By prioritizing the brightest pixels, the method reliably isolates the object of interest while respecting the imposed pixel limit.
+
+The main observations are as follows:
+\begin{itemize}
+    \item The output is consistently limited to a maximum of 1000 bright pixels.
+    \item The algorithm executes fast enough to process approximately one frame per second on the ESP32-CAM.
+    \item Memory usage is kept low through grayscale processing and simple data structures.
+    \item The embedded results closely match those obtained from the Python implementation.
+\end{itemize}

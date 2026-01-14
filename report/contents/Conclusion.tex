@@ -1,0 +1,45 @@
+\section{Conclusion}
+
+This project demonstrates that meaningful image processing tasks can be implemented on a resource-constrained embedded platform when algorithms are carefully designed. By relying on integer arithmetic, simple data structures, and efficient memory usage, real-time image processing was achieved on the ESP32-CAM despite its limited computational capabilities.
+
+\subsection{Key Achievements}
+
+Three main tasks were successfully completed, each highlighting a different aspect of embedded image processing:
+
+\begin{itemize}
+    \item \textbf{Question 1: Thresholding} — A histogram-based adaptive thresholding algorithm was implemented to extract bright objects from dark backgrounds. The method reliably limits the output to a maximum of 1000 bright pixels, operates entirely using integer arithmetic, and processes 96×96 grayscale images at approximately one frame per second. This demonstrates that simple yet effective object extraction can be achieved with minimal memory usage.
+    
+    \item \textbf{Question 2: Digit Detection} — A complete YOLO-based handwritten digit detection pipeline was developed, including dataset preparation, model training, hyperparameter tuning, and evaluation. The system successfully detects digits 0, 4, and 7, achieving a validation mAP@0.5 of 0.954 using the best hyperparameter configuration. Some confusion between digits 4 and 7 was observed due to their visual similarity, but overall performance is strong. An intentional overfitting strategy was adopted to improve robustness after heavy model compression, which is required for future ESP32 deployment.
+    
+    \item \textbf{Question 3: Image Resizing} — Image upsampling and downsampling with non-integer scale factors (1.5× and 2/3×) were implemented using nearest-neighbor interpolation. The algorithm correctly processes RGB565 color images using integer arithmetic only. An extended implementation was also developed to generate original, upsampled, and downsampled images from a single captured frame, ensuring fair and consistent comparisons.
+\end{itemize}
+
+\subsection{Methodology}
+
+A two-stage development workflow was used throughout the project, which proved to be both effective and efficient:
+
+\begin{itemize}
+    \item \textbf{Python Stage} — Algorithms were first developed and tested in Python on a PC. The code was written in a microcontroller-oriented style, allowing early validation of correctness and behavior before deployment. This stage enabled rapid iteration and simplified debugging.
+    
+    \item \textbf{ESP32 Stage} — The validated algorithms were then ported to the ESP32-CAM using C/C++. Careful optimization was required to meet memory and performance constraints, including the use of appropriate data types, minimal buffer usage, and efficient serial communication.
+    
+    \item \textbf{Benefits} — This approach reduced development time, minimized debugging effort on the embedded platform, and provided clear reference implementations for verification. The Python code also served as effective documentation of the algorithmic logic.
+\end{itemize}
+
+\subsection{Limitations and Future Work}
+
+Although the project objectives were achieved, several limitations remain and suggest directions for future work:
+
+\begin{itemize}
+    \item \textbf{Thresholding} — The current algorithm assumes a clear brightness contrast between object and background. More complex lighting conditions or multiple objects may require additional preprocessing or more adaptive techniques.
+    
+    \item \textbf{Digit Detection} — Full deployment of the YOLO model on the ESP32-CAM requires further work on model quantization and optimization. The PyTorch-to-TensorFlow Lite Micro conversion process remains challenging and needs additional investigation. The effectiveness of the overfitting strategy after heavy compression should be validated through on-device testing.
+    
+    \item \textbf{Image Resizing} — Nearest-neighbor interpolation provides sufficient quality for embedded applications but may introduce visible pixelation, especially during upsampling. Higher-quality methods such as bilinear interpolation could be explored if additional computational resources become available.
+\end{itemize}
+
+\subsection{Final Remarks}
+
+This project shows that practical embedded image processing is achievable on low-cost hardware when algorithms are designed with hardware constraints in mind. The successful implementation of thresholding, object detection training, and image resizing demonstrates the versatility of simple, efficient methods on embedded systems.
+
+The two-stage development methodology proved to be an effective strategy for bridging high-level algorithm design and low-level embedded implementation. The techniques and implementations developed in this project provide a solid foundation for more advanced embedded vision applications, including future deployment of deep learning models directly on microcontroller platforms.

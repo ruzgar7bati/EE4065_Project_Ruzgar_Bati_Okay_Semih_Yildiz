@@ -1,82 +1,180 @@
 """
-YOLO Training Script for Handwritten Digit Detection
-Trains a YOLO model to detect handwritten digits (0-9)
+Training Script for Handwritten Digit Detection
+
+Compatible with:
+- Python 3.10
+- ultralytics 8.0.196
+- torch 2.5.1
+
+IMPORTANT:
+- In ultralytics 8.0.x, model.train() does NOT expose metrics
+- Metrics are obtained by calling model.val() AFTER training
 """
+
 from ultralytics import YOLO
 import os
-import argparse
+import pandas as pd
+from pathlib import Path
+import time
 
+# ============================================================================
+# CONFIGURATION
+# ============================================================================
+HYPERPARAMETER_SEARCH = True
 
-def main():
-    parser = argparse.ArgumentParser(description='Train YOLO model for digit detection')
-    parser.add_argument('--model', type=str, default='yolov8n.pt',
-                        help='YOLO model to use (yolov8n.pt, yolov8s.pt, etc.)')
-    parser.add_argument('--epochs', type=int, default=50,
-                        help='Number of training epochs')
-    parser.add_argument('--imgsz', type=int, default=320,
-                        help='Image size for training')
-    parser.add_argument('--batch', type=int, default=8,
-                        help='Batch size')
-    parser.add_argument('--device', type=str, default='cpu',
-                        help='Device to use (cpu, cuda, 0, 1, etc.)')
-    parser.add_argument('--data', type=str, default='data.yaml',
-                        help='Path to data.yaml file')
-    
-    args = parser.parse_args()
-    
-    # Check if data.yaml exists
-    if not os.path.exists(args.data):
-        print(f"Error: {args.data} not found!")
-        print("Please create data.yaml with dataset configuration.")
-        return
-    
-    print("=" * 60)
-    print("YOLO Handwritten Digit Detection - Training")
-    print("=" * 60)
-    print("Classes: 0, 4, 7 (3 digits)")
-    print(f"Model: {args.model}")
-    print(f"Epochs: {args.epochs}")
-    print(f"Image size: {args.imgsz}")
-    print(f"Batch size: {args.batch}")
-    print(f"Device: {args.device}")
-    print("=" * 60)
-    
-    # Load YOLO model
-    print(f"\nLoading model: {args.model}")
-    model = YOLO(args.model)
-    
-    # Train the model
-    print(f"\nStarting training...")
-    print("This may take a while. Please be patient.\n")
-    
+MODEL = "yolov8n.pt"
+DATA_YAML = "data.yaml"
+
+EPOCHS = 50
+IMGSZ = 320
+DEVICE = "cpu"
+
+HYPERPARAMETER_EXPERIMENTS = [
+    {"lr0": 0.001, "batch": 2, "name": "lr0.001_batch2"},
+    {"lr0": 0.001, "batch": 4, "name": "lr0.001_batch4"},
+    {"lr0": 0.001, "batch": 8, "name": "lr0.001_batch8"},
+    {"lr0": 0.01,  "batch": 2, "name": "lr0.01_batch2"},
+    {"lr0": 0.01,  "batch": 4, "name": "lr0.01_batch4"},
+    {"lr0": 0.01,  "batch": 8, "name": "lr0.01_batch8"},
+]
+
+RESULTS_DIR = Path("hyperparameter_results")
+
+# ============================================================================
+# TRAINING + VALIDATION
+# ============================================================================
+def run_experiment(exp_config, exp_id):
+    print("\n" + "=" * 70)
+    print(f"Experiment {exp_id + 1}/{len(HYPERPARAMETER_EXPERIMENTS)}")
+    print(f"Name : {exp_config['name']}")
+    print(f"LR   : {exp_config['lr0']}")
+    print(f"Batch: {exp_config['batch']}")
+    print("=" * 70)
+
+    model = YOLO(MODEL)
+    project_name = f"exp_{exp_id + 1}_{exp_config['name']}"
+
     try:
-        results = model.train(
-            data=args.data,
-            epochs=args.epochs,
-            imgsz=args.imgsz,
-            batch=args.batch,
-            device=args.device,
-            project='runs/detect',
-            name='digit_detection',
+        # -------------------------------
+        # TRAIN
+        # -------------------------------
+        model.train(
+            data=DATA_YAML,
+            epochs=EPOCHS,
+            imgsz=IMGSZ,
+            batch=exp_config["batch"],
+            lr0=exp_config["lr0"],
+            device=DEVICE,
+            project=str(RESULTS_DIR),
+            name=project_name,
             save=True,
-            plots=True
+            plots=True,
+            verbose=True,
         )
-        
-        print("\n" + "=" * 60)
-        print("Training completed successfully!")
-        print("=" * 60)
-        print(f"Best model saved to: runs/detect/digit_detection/weights/best.pt")
-        print(f"Last model saved to: runs/detect/digit_detection/weights/last.pt")
-        print("\nYou can now use the model for inference with infer.py")
-        
-    except Exception as e:
-        print(f"\nError during training: {e}")
-        print("\nCommon issues:")
-        print("1. Check that images/ and labels/ folders exist")
-        print("2. Verify data.yaml paths are correct")
-        print("3. Ensure images and labels are properly paired")
-        print("4. Check that you have enough disk space")
 
+        exp_dir = RESULTS_DIR / project_name
+        best_model_path = exp_dir / "weights" / "best.pt"
+
+        if not best_model_path.exists():
+            raise FileNotFoundError("best.pt not found after training")
+
+        # -------------------------------
+        # VALIDATE (THIS IS THE KEY FIX)
+        # -------------------------------
+        print("\nRunning explicit validation to collect metrics...")
+        val_results = model.val(
+            data=DATA_YAML,
+            imgsz=IMGSZ,
+            device=DEVICE
+        )
+
+        m = val_results.metrics.box
+
+        map50 = float(m.map50)
+        map5095 = float(m.map)
+        precision = float(m.mp)
+        recall = float(m.mr)
+
+        print(
+            f"✓ Validation results | "
+            f"mAP50: {map50:.4f}, "
+            f"mAP50-95: {map5095:.4f}, "
+            f"P: {precision:.4f}, "
+            f"R: {recall:.4f}"
+        )
+
+        return {
+            "experiment_id": exp_id + 1,
+            "name": exp_config["name"],
+            "learning_rate": exp_config["lr0"],
+            "batch_size": exp_config["batch"],
+            "image_size": IMGSZ,
+            "mAP50": map50,
+            "mAP50_95": map5095,
+            "precision": precision,
+            "recall": recall,
+            "model_path": str(best_model_path),
+        }
+
+    except Exception as e:
+        print(f"✗ Experiment failed: {e}")
+        return None
+
+# ============================================================================
+# HYPERPARAMETER SEARCH
+# ============================================================================
+def run_hyperparameter_search():
+    print("=" * 70)
+    print("HYPERPARAMETER SEARCH")
+    print("=" * 70)
+
+    RESULTS_DIR.mkdir(exist_ok=True)
+    all_results = []
+
+    start_time = time.time()
+
+    for i, exp in enumerate(HYPERPARAMETER_EXPERIMENTS):
+        result = run_experiment(exp, i)
+        if result:
+            all_results.append(result)
+
+    elapsed_min = (time.time() - start_time) / 60
+    print(f"\nAll experiments finished in {elapsed_min:.1f} minutes")
+
+    if not all_results:
+        print("No successful experiments.")
+        return
+
+    df = pd.DataFrame(all_results)
+    csv_path = RESULTS_DIR / "validation_metrics.csv"
+    df.to_csv(csv_path, index=False)
+
+    best = df.loc[df["mAP50"].idxmax()]
+
+    with open(RESULTS_DIR / "best_model_info.txt", "w", encoding="utf-8") as f:
+        f.write("BEST MODEL INFORMATION\n")
+        f.write("=" * 50 + "\n")
+        f.write(f"Experiment   : {best['name']}\n")
+        f.write(f"Learning Rate: {best['learning_rate']}\n")
+        f.write(f"Batch Size   : {best['batch_size']}\n")
+        f.write(f"mAP50        : {best['mAP50']:.4f}\n")
+        f.write(f"Model Path   : {best['model_path']}\n")
+
+    print(f"\n✓ Results saved to: {csv_path}")
+    print(f"✓ Best model: {best['name']} (mAP50: {best['mAP50']:.4f})")
+
+# ============================================================================
+# MAIN
+# ============================================================================
+def main():
+    if not os.path.exists(DATA_YAML):
+        print(f"Error: {DATA_YAML} not found.")
+        return
+
+    if HYPERPARAMETER_SEARCH:
+        run_hyperparameter_search()
+    else:
+        print("Single-run mode disabled in this configuration.")
 
 if __name__ == "__main__":
     main()

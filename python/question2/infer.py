@@ -1,140 +1,128 @@
 """
-YOLO Inference Script for Handwritten Digit Detection
-Runs inference on images using trained YOLO model
+Inference Script - Generate annotated images for report
+
+Compatible with:
+- Python 3.10
+- ultralytics 8.0.196
 """
+
 from ultralytics import YOLO
-import cv2
-import matplotlib.pyplot as plt
 import os
-import argparse
+import pandas as pd
+from pathlib import Path
+import cv2
 import glob
 
+# ============================================================================
+# CONFIGURATION
+# ============================================================================
+MODEL_PATH = None  # Set manually if needed
+RESULTS_DIR = Path("hyperparameter_results")
+TEST_DIR = "images/test"
+OUTPUT_DIR = "figures"
+CONF_THRESHOLD = 0.25
 
-def visualize_results(results, image_path, save_path=None, show=True):
-    """Visualize detection results"""
-    annotated = results[0].plot()
-    annotated = cv2.cvtColor(annotated, cv2.COLOR_BGR2RGB)
-    
-    if save_path:
-        cv2.imwrite(save_path, cv2.cvtColor(annotated, cv2.COLOR_RGB2BGR))
-        print(f"Saved result to: {save_path}")
-    
-    if show:
-        plt.figure(figsize=(12, 8))
-        plt.imshow(annotated)
-        plt.title(f"Detected Handwritten Digits - {os.path.basename(image_path)}")
-        plt.axis("off")
-        plt.tight_layout()
-        plt.show()
+# ============================================================================
+# HELPERS
+# ============================================================================
+def load_best_model_path():
+    csv_path = RESULTS_DIR / "validation_metrics.csv"
+    if not csv_path.exists():
+        return None
 
+    df = pd.read_csv(csv_path)
+    best = df.loc[df["mAP50"].idxmax()]
 
-def print_detections(results):
-    """Print detection results in text format"""
-    # Class mapping: 0="0", 1="4", 2="7"
-    class_names = {0: '0', 1: '4', 2: '7'}
-    
-    print("\n" + "=" * 60)
-    print("Detection Results:")
-    print("=" * 60)
-    
-    if len(results[0].boxes) == 0:
-        print("No digits detected!")
-        return
-    
-    for i, box in enumerate(results[0].boxes):
-        # Get class ID and confidence
-        class_id = int(box.cls[0])
-        confidence = float(box.conf[0])
-        
-        # Get digit name from class mapping
-        digit_name = class_names.get(class_id, f"Unknown({class_id})")
-        
-        # Get bounding box coordinates
-        x1, y1, x2, y2 = box.xyxy[0].tolist()
-        
-        print(f"\nDetection {i+1}:")
-        print(f"  Digit: {digit_name} (class {class_id})")
-        print(f"  Confidence: {confidence:.2%}")
-        print(f"  Bounding box: ({x1:.1f}, {y1:.1f}) to ({x2:.1f}, {y2:.1f})")
-    
-    print("=" * 60)
+    print("Best model from hyperparameter search:")
+    print(
+        f"  {best['experiment']} | "
+        f"mAP50={best['mAP50']:.4f}"
+    )
+    print(f"  Model path: {best['model_path']}")
 
+    return best["model_path"]
 
-def main():
-    parser = argparse.ArgumentParser(description='Run YOLO inference on images')
-    parser.add_argument('--model', type=str, 
-                        default='runs/detect/digit_detection/weights/best.pt',
-                        help='Path to trained model weights')
-    parser.add_argument('--source', type=str, default='test_digit.jpg',
-                        help='Image path, folder path, or pattern (e.g., images/test/*.jpg)')
-    parser.add_argument('--conf', type=float, default=0.25,
-                        help='Confidence threshold (0-1)')
-    parser.add_argument('--save', action='store_true',
-                        help='Save annotated images')
-    parser.add_argument('--output', type=str, default='results',
-                        help='Output directory for saved images')
-    parser.add_argument('--no-show', action='store_true',
-                        help='Do not display images (useful for batch processing)')
-    
-    args = parser.parse_args()
-    
-    # Check if model exists
-    if not os.path.exists(args.model):
-        print(f"Error: Model not found at {args.model}")
-        print("\nPlease train the model first using train.py")
-        print("Or specify the correct model path with --model")
-        return
-    
-    # Load model
-    print(f"Loading model: {args.model}")
-    model = YOLO(args.model)
-    
-    # Create output directory if saving
-    if args.save:
-        os.makedirs(args.output, exist_ok=True)
-    
-    # Determine input type
-    if os.path.isfile(args.source):
-        # Single image
-        image_paths = [args.source]
-    elif os.path.isdir(args.source):
-        # Directory - find all images
-        image_paths = []
-        for ext in ['*.jpg', '*.jpeg', '*.png', '*.JPG', '*.JPEG', '*.PNG']:
-            image_paths.extend(glob.glob(os.path.join(args.source, ext)))
+# ============================================================================
+# INFERENCE
+# ============================================================================
+def run_inference():
+    # Select model
+    if MODEL_PATH:
+        model_path = MODEL_PATH
+        print(f"Using specified model: {model_path}")
     else:
-        # Pattern (e.g., images/test/*.jpg)
-        image_paths = glob.glob(args.source)
-    
-    if not image_paths:
-        print(f"Error: No images found at {args.source}")
-        return
-    
-    print(f"\nFound {len(image_paths)} image(s) to process")
-    print("=" * 60)
-    
-    # Process each image
-    for image_path in image_paths:
-        print(f"\nProcessing: {os.path.basename(image_path)}")
-        
-        # Run inference
-        results = model(image_path, conf=args.conf)
-        
-        # Print detection results
-        print_detections(results)
-        
-        # Save or show results
-        if args.save:
-            save_path = os.path.join(args.output, f"result_{os.path.basename(image_path)}")
-            visualize_results(results, image_path, save_path=save_path, show=not args.no_show)
-        elif not args.no_show:
-            visualize_results(results, image_path, show=True)
-    
-    print(f"\n{'='*60}")
-    print("Inference completed!")
-    if args.save:
-        print(f"Results saved to: {args.output}")
+        model_path = load_best_model_path()
+        if not model_path:
+            print("Error: Could not determine best model.")
+            print("Run train.py and collect_validation_metrics.py first,")
+            print("or set MODEL_PATH manually.")
+            return
 
+    if not os.path.exists(model_path):
+        print(f"Error: Model not found: {model_path}")
+        return
+
+    print(f"\nLoading model: {model_path}")
+    model = YOLO(model_path)
+
+    # Class names (fallback if model.names missing)
+    class_names = (
+        model.names
+        if hasattr(model, "names") and model.names
+        else {0: "0", 1: "4", 2: "7"}
+    )
+
+    # Collect test images
+    image_paths = []
+    for ext in ("*.jpg", "*.jpeg", "*.png", "*.JPG", "*.JPEG", "*.PNG"):
+        image_paths.extend(glob.glob(os.path.join(TEST_DIR, ext)))
+
+    if not image_paths:
+        print(f"No images found in {TEST_DIR}")
+        return
+
+    os.makedirs(OUTPUT_DIR, exist_ok=True)
+
+    print(f"\nRunning inference on {len(image_paths)} images")
+    print(f"Saving annotated images to: {OUTPUT_DIR}")
+    print("=" * 70)
+
+    for idx, img_path in enumerate(sorted(image_paths), 1):
+        img_name = os.path.basename(img_path)
+        print(f"[{idx}/{len(image_paths)}] {img_name}")
+
+        results = model(img_path, conf=CONF_THRESHOLD)
+        result = results[0]
+
+        # Save annotated image
+        out_path = os.path.join(OUTPUT_DIR, f"result_{img_name}")
+        annotated = result.plot()
+        cv2.imwrite(out_path, annotated)
+        # Print detections
+        if result.boxes is not None and len(result.boxes) > 0:
+            detections = []
+            for box in result.boxes:
+                cls_id = int(box.cls[0].item())
+                conf = float(box.conf[0].item())
+                label = class_names.get(cls_id, f"class_{cls_id}")
+                detections.append(f"{label} ({conf:.2%})")
+            print(f"  Detections: {', '.join(detections)}")
+        else:
+            print("  No detections")
+
+    print("=" * 70)
+    print("\n✓ Inference complete")
+    print(f"✓ Annotated images saved to: {OUTPUT_DIR}")
+    print("You can now select figures for your report.")
+
+# ============================================================================
+# MAIN
+# ============================================================================
+def main():
+    print("=" * 70)
+    print("INFERENCE - REPORT IMAGE GENERATION")
+    print("=" * 70)
+    run_inference()
 
 if __name__ == "__main__":
     main()

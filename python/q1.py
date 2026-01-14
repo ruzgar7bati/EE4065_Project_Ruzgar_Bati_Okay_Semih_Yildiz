@@ -1,5 +1,6 @@
 from PIL import Image
 import matplotlib.pyplot as plt
+from pathlib import Path
 
 
 def rgb_to_grayscale(image):
@@ -85,8 +86,15 @@ def visualize(gray, binary):
 
 
 def main():
-    # Load image (RGB)
-    image = Image.open("test_image.jpg").convert("RGB")
+    # Load image (RGB) relative to this script's folder
+    base_dir = Path(__file__).resolve().parent
+    img_path = base_dir / "question1_images" / "reference_taken_from_phone.jpg"
+    image = Image.open(img_path).convert("RGB")
+
+    # For Python testing only: resize to match ESP32 resolution
+    # This makes the behavior closer to the 96x96 images used on the board
+    target_size = (96, 96)
+    image = image.resize(target_size, Image.BILINEAR)
 
     # Convert to grayscale (ESP32-style)
     gray = rgb_to_grayscale(image)
