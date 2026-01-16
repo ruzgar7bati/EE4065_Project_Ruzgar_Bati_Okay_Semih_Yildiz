@@ -28,7 +28,7 @@ This project implements three image processing tasks on the ESP32-CAM microcontr
 │   ├── q3.py               # Question 3: Resizing algorithm
 │   ├── question1_images/  # Question 1 AND 3 test images, kept the same folder name
 │   └── question2_new/     # Question 2: YOLO training and inference
-├── report/                 # LaTeX report (see report/README.md)
+├── EE4065_Project_Rüzgar_Batı_Okay_150722048_Semih_Yıldız_150721029.pdf
 ├── report_images/          # Project result images
 │   ├── binary.png
 │   ├── figure_grayscale_versus_binaryoutput.png
