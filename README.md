@@ -26,7 +26,7 @@ This project implements three image processing tasks on the ESP32-CAM microcontr
 ├── python/                  # Python implementations and training
 │   ├── q1.py               # Question 1: Thresholding algorithm
 │   ├── q3.py               # Question 3: Resizing algorithm
-│   ├── question1_images/  # Question 1 test images
+│   ├── question1_images/  # Question 1 AND 3 test images, kept the same folder name
 │   └── question2_new/     # Question 2: YOLO training and inference
 ├── report/                 # LaTeX report (see report/README.md)
 ├── report_images/          # Project result images
