@@ -1,7 +1,0 @@
-\section{Introduction}
-
-This project focuses on the implementation of several image processing and computer vision tasks within the constraints of an embedded system. The goal is to design, implement, and evaluate algorithms that can operate efficiently using integer arithmetic and limited computational resources.
-
-Three tasks are addressed in this work. The first task implements histogram-based thresholding for object detection, where bright regions are extracted from dark backgrounds under a constraint on the maximum number of detected pixels, limited to 1000 pixels. The second task explores handwritten digit detection using a YOLO-based model trained to recognize the digits 0, 4, and 7. To reduce model complexity and memory requirements, the detection task is intentionally limited to three representative digit classes, increasing the feasibility of deployment on resource-constrained embedded hardware. The third task implements image upsampling and downsampling with non-integer scale factors using nearest-neighbor interpolation.
-
-All tasks follow a two-stage development workflow. Algorithms are first developed and tested in Python on a PC to validate correctness and behavior. After validation, the implementations are ported to the embedded platform using C/C++, with optimizations focused on integer arithmetic, memory usage, and execution efficiency. This workflow allows systematic evaluation of each method while maintaining a clear connection between high-level design and embedded implementation.
