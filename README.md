@@ -44,16 +44,40 @@ This project implements three image processing tasks on the ESP32-CAM microcontr
 
 All project result images are located in `report_images/`:
 
-- **Question 1 Results:**
-  - `report_images/reference_taken_from_phone.jpg` - Reference image (sugar cube on calculator case)
-  - `report_images/figure_grayscale_versus_binaryoutput.png` - Grayscale vs binary comparison
-  - `report_images/binary.png` - ESP32-CAM binary output
+### Question 1 Results
 
-- **Question 3 Results:**
-  - `report_images/q3_comparison.png` - Python comparison (original, upsampled, downsampled)
-  - `report_images/resized-normal.jpg` - ESP32 original image (1:1 scale)
-  - `report_images/resized-upsampled.jpg` - ESP32 upsampled image (1.5x)
-  - `report_images/resized-downsampled.jpg` - ESP32 downsampled image (2/3 scale)
+**Reference Image (sugar cube on calculator case):**
+![Reference Image](report_images/reference_taken_from_phone.jpg)
+
+**Grayscale vs Binary Comparison:**
+![Grayscale vs Binary](report_images/figure_grayscale_versus_binaryoutput.png)
+
+**ESP32-CAM Binary Output:**
+![Binary Output](report_images/binary.png)
+
+### Question 2 Dataset and Labels
+
+**Dataset sample used for training/testing (handwritten digits 0, 4, 7):**
+![Question 2 Dataset Sample](python/question2_new/images/Untitled.jpg)
+
+**Validation labels example from best experiment:**
+![Validation Labels](python/question2_new/hyperparameter_results/exp_3_lr0.001_batch8/val_batch0_labels.jpg)
+
+### Question 3 Results
+
+**Python Comparison (original, upsampled, downsampled):**
+![Python Comparison](report_images/q3_comparison.png)
+
+**ESP32-CAM Results:**
+
+Original Image (1:1 scale):
+![ESP32 Original](report_images/resized-normal.jpg)
+
+Upsampled Image (1.5x):
+![ESP32 Upsampled](report_images/resized-upsampled.jpg)
+
+Downsampled Image (2/3 scale):
+![ESP32 Downsampled](report_images/resized-downsampled.jpg)
 
 ## Requirements Files
 
@@ -103,5 +127,7 @@ Dependencies for TensorFlow Lite model conversion (Question 2):
 
 ## Report
 
-The LaTeX report is located in `report/`. See `report/README.md` for compilation instructions.
+The LaTeX report source files are located in `report/`. See `report/README.md` for compilation instructions.
+
+**Compiled PDF Report:** `EE4065_Project_Rüzgar_Batı_Okay_150722048_Semih_Yıldız_150721029.pdf` (located in the project root directory)
 
