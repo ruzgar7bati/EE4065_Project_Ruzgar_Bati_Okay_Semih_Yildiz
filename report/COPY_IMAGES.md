@@ -4,7 +4,7 @@ Please copy the following image files from their source locations to `report/ima
 
 ## Question 1 Images
 
-1. **Phone Reference and Python Results:**
+1. **Reference and Python Results:**
    - Source: `python/question1_images/reference_taken_from_phone.jpg`
    - Destination: `report/images/q1_reference_taken_from_phone.jpg`
 

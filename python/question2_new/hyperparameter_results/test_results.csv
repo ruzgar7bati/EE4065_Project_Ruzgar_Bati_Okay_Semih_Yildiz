@@ -1,0 +1,2 @@
+model_path,name,lr0,batch,imgsz,val_mAP50,val_precision,val_recall,test_mAP50,test_mAP50_95,test_precision,test_recall
+hyperparameter_results\exp_3_lr0.001_batch8\weights\best.pt,lr0.001_batch8,0.001,8,320,0.9541666666666668,0.8129256463658862,0.8219106228036268,0.0,0.0,0.0,0.0

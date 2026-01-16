@@ -44,6 +44,22 @@ Model training is implemented as shown in Appendix~\ref{appendix:q2:training}. A
 
 Training is conducted using the training set, hyperparameters are evaluated on the validation set, and the test set is used only for final evaluation. All images are resized to 320×320 pixels during training.
 
+\begin{lstlisting}[style=pythonstyle, caption=Training and metric extraction (Python)]
+from ultralytics import YOLO
+
+model = YOLO("yolov8n.pt")
+results = model.train(
+    data="data.yaml",
+    imgsz=320,
+    epochs=50,
+    batch=8,
+    lr0=0.001
+)
+
+metrics = results.results_dict
+map50 = metrics.get("metrics/mAP50(B)", 0.0)
+\end{lstlisting}
+
 \subsubsection{Model Evaluation}
 
 The trained models are evaluated using the evaluation logic shown in Appendix~\ref{appendix:q2:evaluation}. The evaluation computes standard object detection metrics, including mAP50, mAP50–95, precision, and recall. Results are saved to CSV files (\texttt{validation\_metrics.csv}, \texttt{test\_results.csv}) for analysis.

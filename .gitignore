@@ -10,3 +10,6 @@ python/question2_new/hyperparameter_results/exp_4_lr0.01_batch2/
 python/question2_new/hyperparameter_results/exp_5_lr0.01_batch4/
 python/question2_new/hyperparameter_results/exp_6_lr0.01_batch8/
 
+python/question2/
+*.onnx
+report/

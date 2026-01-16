@@ -79,6 +79,16 @@ Key implementation features include:
 
 The function \texttt{resize\_nearest()} performs resizing directly on RGB565 pixel data by copying source pixels to the appropriate output locations.
 
+\begin{lstlisting}[style=cstyle, caption=Inverse mapping for nearest-neighbor resize (ESP32)]
+int src_y = (y * SCALE_DEN) / SCALE_NUM;
+int src_x = (x * SCALE_DEN) / SCALE_NUM;
+
+if (src_y >= IN_H) src_y = IN_H - 1;
+if (src_x >= IN_W) src_x = IN_W - 1;
+
+resized[y * OUT_W + x] = in_rgb565[src_y * IN_W + src_x];
+\end{lstlisting}
+
 A compile-time setting (\texttt{IMAGE\_MODE}) controls the resizing mode:
 \begin{itemize}
     \item \texttt{IMAGE\_MODE = 0}: Original image (160×120, no resizing)

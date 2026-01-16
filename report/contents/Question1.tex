@@ -25,7 +25,7 @@ This method ensures that the brightest regions are preserved while enforcing a s
 
 The algorithm is first implemented in Python to verify correctness and behavior. The complete Python implementation is shown in Appendix~\ref{appendix:q1:python}. The code closely follows the structure intended for the embedded implementation, avoiding unnecessary abstractions and floating-point operations where possible.
 
-For testing, we used a real photograph of a \textbf{sugar cube} placed on a dark phone and wooden table, taken with a mobile phone camera. The printed identifying information (such as company name and address) on the sugar cube is censored in the image, which explains the visible white edit in the reference picture.
+For testing, we used a real photograph of a \textbf{sugar cube} placed on the back of a dark calculator case and a wooden table, taken with a mobile phone camera. The printed identifying information (such as company name and address) on the sugar cube is censored in the image, which explains the visible white edit in the reference picture.
 
 The main components of the Python implementation (see Appendix~\ref{appendix:q1:python}) include:
 \begin{itemize}
@@ -39,17 +39,31 @@ The main components of the Python implementation (see Appendix~\ref{appendix:q1:
 
 The histogram is computed in a single pass over the image, followed by a second pass to determine the threshold. This design directly mirrors the logic used in the embedded implementation. The Python script loads images from \texttt{question1\_images/reference\_taken\_from\_phone.jpg} and saves visualization results.
 
+\begin{lstlisting}[style=pythonstyle, caption=Histogram-based threshold selection (Python)]
+hist = [0] * 256
+for p in gray_pixels:
+    hist[p] += 1
+
+count = 0
+threshold = 255
+for i in range(255, -1, -1):
+    count += hist[i]
+    if count >= 1000:
+        threshold = i
+        break
+\end{lstlisting}
+
 \begin{figure}[H]
     \centering
     \includegraphics[width=0.45\textwidth]{images/q1_reference_taken_from_phone.jpg}
-    \caption{Reference image taken with a phone: sugar cube on a darker phone and wooden background. Identifying text on the sugar wrapper (company address, etc.) is censored with a white edit.}
+    \caption{Reference image taken with a mobile phone camera: sugar cube on a darker calculator case and wooden background. Identifying text on the sugar wrapper (company address, etc.) is censored with a white edit.}
     \label{fig:q1_phone_reference}
 \end{figure}
 
 \begin{figure}[H]
     \centering
     \includegraphics[width=0.9\textwidth]{images/q1_figure_grayscale_versus_binaryoutput.png}
-    \caption{Python test: grayscale image (left) and binary output (right) after histogram-based thresholding. Due to viewing angle and lighting conditions from the phone camera and environment, the exact shape is slightly different from the ESP32 result, but in both cases the sugar cube is successfully extracted as a bright object.}
+    \caption{Python test: grayscale image (left) and binary output (right) after histogram-based thresholding. Due to viewing angle and lighting conditions from the mobile phone camera and environment, the exact shape is slightly different from the ESP32 result, but in both cases the sugar cube is successfully extracted as a bright object.}
     \label{fig:q1_python_result}
 \end{figure}
 
@@ -80,7 +94,7 @@ A Python receiver script (see Appendix~\ref{appendix:q1:receiver}) running on th
 \begin{figure}[H]
     \centering
     \includegraphics[width=0.25\textwidth]{images/q1_binary.png}
-    \caption{Binary image received from the ESP32-CAM thresholding pipeline. Even though the camera angle and lighting differ from the phone image, the algorithm again extracts the sugar cube as a compact bright region with at most 1000 pixels.}
+    \caption{Binary image received from the ESP32-CAM thresholding pipeline. Even though the camera angle and lighting differ from the calculator-case image, the algorithm again extracts the sugar cube as a compact bright region with at most 1000 pixels.}
     \label{fig:q1_esp32_binary}
 \end{figure}
 
